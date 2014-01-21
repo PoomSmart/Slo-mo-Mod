@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>title</key>
+    <string>Slo-mo Mod</string>
+    <key>entry</key>
+    <dict>
+      <key>cell</key>
+      <string>PSLinkCell</string>
+      <key>icon</key>
+      <string>Sla.png</string>
+      <key>label</key>
+      <string>Slo-mo Mod</string>
+    </dict>
+    <key>items</key>
+    <array>
+      <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Mogul framerate</string>
+        <key>footerText</key>
+        <string>Set the framerate where camera uses for slo-mo setup, common values are 30, 60 or 120 fps depends on your device.
+WARNING: Set it incorrectly (impossible or unsupported value) causes camera crashing.
+NOTE: iPhone 4, iPhone 4S, iPad 2 and iPad 3 maximum supported value is 30 fps.</string>
+      </dict>
+      <dict>
+		<key>cell</key>
+		<string>PSEditTextCell</string>
+		<key>detail</key>
+		<string>PSDetailController</string>
+		<key>default</key>
+		<string>60</string>
+		<key>defaults</key>
+		<string>com.PS.SlalomMod</string>
+		<key>PostNotification</key>
+		<string>com.PS.SlalomMod.prefs</string>
+		<key>key</key>
+		<string>MogulFramerate</string>
+		<key>placeholder</key>
+		<string>Enter FPS</string>
+		<key>isNumeric</key>
+		<true/>
+	   </dict>
+	   <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Force Slo-mo for all videos</string>
+        <key>footerText</key>
+        <string>If this enabled, any recorded videos will be marked as Slo-mo, so you can set their slow region in any videos in Camera or Photos app even if they are not slo-mo video.</string>
+      </dict>
+      <dict>
+        <key>cell</key>
+        <string>PSSwitchCell</string>
+        <key>default</key>
+        <false/>
+        <key>PostNotification</key>
+		<string>com.PS.SlalomMod.prefs</string>
+        <key>defaults</key>
+        <string>com.PS.SlalomMod</string>
+        <key>key</key>
+        <string>ForceSlalom</string>
+        <key>label</key>
+        <string>Enabled</string>
+      </dict>
+      <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Enable Slo-mo</string>
+        <key>footerText</key>
+        <string>There's an issue with some devices, when you leave the camera app into the background and open it again and you are currently in slo-mo mod, the camera may very lag. The temporary fix is switching to other camera mode and then switching back to slo-mo mode.</string>
+      </dict>
+      <dict>
+        <key>cell</key>
+        <string>PSSwitchCell</string>
+        <key>default</key>
+        <true/>
+        <key>defaults</key>
+        <string>com.PS.SlalomMod</string>
+        <key>PostNotification</key>
+		<string>com.PS.SlalomMod.prefs</string>
+        <key>key</key>
+        <string>EnableSlalom</string>
+        <key>label</key>
+        <string>Enabled</string>
+      </dict>
+      <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Slo-mo rate</string>
+        <key>footerText</key>
+        <string>Set the factor of the slo-mo region of your video. For example, the default value is 0.25, if your mogul framerate is 60 fps, the slow part of the video you recorded will be played at 60 x 0.25 = 15 fps.
+Larger value is smoother, also faster playback, but you cannot set it over than 1.0</string>
+      </dict>
+      <dict>
+			<key>PostNotification</key>
+			<string>com.PS.SlalomMod.prefs</string>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>0.25</real>
+			<key>defaults</key>
+			<string>com.PS.SlalomMod</string>
+			<key>key</key>
+			<string>rate</string>
+			<key>max</key>
+			<real>1.0</real>
+			<key>min</key>
+			<real>0.1</real>
+			<key>showValue</key>
+			<true/>
+		</dict>
+		<dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>label</key>
+        <string>Slo-mo video ramp volume</string>
+        <key>footerText</key>
+        <string>Set the volume of the slow part of the slo-mo video.
+2.0 seems to be as same as the volume of the normal part of the slo-mo video.</string>
+      </dict>
+      <dict>
+			<key>PostNotification</key>
+			<string>com.PS.SlalomMod.prefs</string>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>default</key>
+			<real>0.15</real>
+			<key>defaults</key>
+			<string>com.PS.SlalomMod</string>
+			<key>key</key>
+			<string>volumeRamp</string>
+			<key>max</key>
+			<real>5.0</real>
+			<key>min</key>
+			<real>0.0</real>
+			<key>showValue</key>
+			<true/>
+		</dict>
+      <dict>
+        <key>cell</key>
+        <string>PSGroupCell</string>
+        <key>footerText</key>
+        <string>© 2013 - 2014 Thuchapol Unprasert
+(@PoomSmart)</string>
+      </dict>
+    </array>
+  </dict>
+</plist>

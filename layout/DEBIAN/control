@@ -1,0 +1,9 @@
+Architecture: iphoneos-arm
+Name: Slo-mo Mod
+Package: org.thebigboss.slalommod
+Version: 1.0
+Author: PoomSmart
+Pre-Depends: gsc.rear-camera-capability, firmware (>= 7.0)
+Depends: mobilesubstrate, preferenceloader, org.thebigboss.burstmode [!cy+model.iphone (> 6)]
+Description: enable camera Slo-mo capture and customize it.
+Icon: file:///Library/PreferenceLoader/Preferences/SlalomMod/Sla@2x.png
