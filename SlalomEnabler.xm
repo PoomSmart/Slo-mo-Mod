@@ -1,5 +1,3 @@
-#import <CoreMedia/CMTime.h>
-
 #define PREF_PATH @"/var/mobile/Library/Preferences/com.PS.SlalomMod.plist"
 #define PreferencesChangedNotification "com.PS.SlalomMod.prefs"
 #define k(key) CFEqual(string, CFSTR(key))
@@ -22,8 +20,7 @@ static void pref()
 
 static void PreferencesChangedCallback(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
-	system("killall Camera MobileSlideShow");
-	pref();
+	exit(0);
 }
 
 %hook CAMCameraSpec
