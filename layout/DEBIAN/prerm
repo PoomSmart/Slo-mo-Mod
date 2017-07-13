@@ -1,0 +1,11 @@
+#!/bin/sh
+
+chk=$(uname -m)
+
+if [ ! -d "/System/Library/Frameworks/PhotosUI.framework" ];then
+	## Pre-iOS 8
+	if [[ "$chk" != iPhone6* ]];then
+		rm -f /System/Library/PrivateFrameworks/PhotoLibrary.framework/*Slalom*
+		rm -f /System/Library/PrivateFrameworks/PhotosUI.framework/PUSlalom*
+	fi
+fi

@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = "SlalomModSettings";
+		cell = PSLinkCell;
+		detail = "SlalomModPreferenceController";
+		icon = "Sla.png";
+		isController = 1;
+		label = "Slo-mo Mod";
+	};
+}

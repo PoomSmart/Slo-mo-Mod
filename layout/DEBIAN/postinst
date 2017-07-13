@@ -1,0 +1,16 @@
+#!/bin/sh
+
+chk=$(uname -m)
+
+if [ ! -d "/System/Library/Frameworks/PhotosUI.framework" ];then
+	## Pre-iOS 8
+	if [[ "$chk" != iPhone6* ]];then
+		cp /Library/SlalomUI/PhotoLibrary/*.png /System/Library/PrivateFrameworks/PhotoLibrary.framework
+		cp /Library/SlalomUI/PhotosUI/*.png /System/Library/PrivateFrameworks/PhotosUI.framework
+	fi
+fi
+
+## No need anymore
+rm -rf /Library/SlalomUI
+
+echo "Make sure you reboot your device after installation!"
