@@ -1,6 +1,5 @@
-GO_EASY_ON_ME = 1
-TARGET = iphone:latest:7.0
-PACKAGE_VERSION = 1.5.3
+TARGET = iphone:clang:latest:7.0
+PACKAGE_VERSION = 1.5.4
 
 include $(THEOS)/makefiles/common.mk
 
@@ -14,12 +13,18 @@ SlalomEnabler_FILES = Tweak.xm
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
+LIBRARY_NAME = SlalomShared
+SlalomShared_FILES = SlalomMBProgressHUD.m SlalomUtilities.m
+SlalomShared_INSTALL_PATH = /Library/MobileSubstrate/DynamicLibraries/SlalomEnabler
+
+include $(THEOS_MAKE_PATH)/library.mk
+
 BUNDLE_NAME = SlalomModSettings
 SlalomModSettings_FILES = SlalomModPreferenceController.m SlalomMBProgressHUD.m
 SlalomModSettings_INSTALL_PATH = /Library/PreferenceBundles
 SlalomModSettings_FRAMEWORKS = AVFoundation CoreGraphics Social UIKit
+SlalomModSettings_EXTRA_FRAMEWORKS = CepheiPrefs
 SlalomModSettings_PRIVATE_FRAMEWORKS = Preferences
-SlalomModSettings_LIBRARIES = cepheiprefs
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

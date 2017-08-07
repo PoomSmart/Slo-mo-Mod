@@ -1,13 +1,13 @@
-GO_EASY_ON_ME = 1
-SDKVERSION = 7.0
+TARGET = iphone:clang:7.1:7.0
 
 include $(THEOS)/makefiles/common.mk
 
 LIBRARY_NAME = SlalomEnableriOS7
-SlalomEnableriOS7_FILES = Tweak.xm ../SlalomMBProgressHUD.m
-SlalomEnableriOS7_FRAMEWORKS = AVFoundation CoreGraphics CoreMedia QuartzCore UIKit
+SlalomEnableriOS7_FILES = Tweak.xm
+SlalomEnableriOS7_FRAMEWORKS = AVFoundation CoreMedia UIKit
 SlalomEnableriOS7_PRIVATE_FRAMEWORKS = PhotoLibrary
-SlalomEnableriOS7_LIBRARIES = MobileGestalt substrate
-SlalomEnableriOS7_INSTALL_PATH = /Library/Application Support/SlalomEnabler
+SlalomEnableriOS7_EXTRA_FRAMEWORKS = CydiaSubstrate
+SlalomEnableriOS7_LIBRARIES = MobileGestalt
+SlalomEnableriOS7_INSTALL_PATH = /Library/MobileSubstrate/DynamicLibraries/SlalomEnabler
 
 include $(THEOS_MAKE_PATH)/library.mk

@@ -1,12 +1,15 @@
+#define UIFUNCTIONS_NOT_C
 #define KILL_PROCESS
-#import <UIKit/UIKit.h>
+#import <UIKit/UIImage+Private.h>
+#import <UIKit/UIColor+Private.h>
 #import <Cephei/HBListController.h>
 #import <Preferences/PSSpecifier.h>
 #import <Social/Social.h>
 #include <sys/sysctl.h>
 #import "Slalom.h"
-#import "Slalom.x"
+#import "SlalomUtilities.h"
 #import <Cephei/HBAppearanceSettings.h>
+#import <dlfcn.h>
 #import "../PSPrefs.x"
 
 DeclarePrefs()
@@ -109,6 +112,7 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
         [heart sizeToFit];
         [heart addTarget:self action:@selector(love) forControlEvents:UIControlEventTouchUpInside];
         self.navigationItem.rightBarButtonItem = [[[UIBarButtonItem alloc] initWithCustomView:heart] autorelease];
+        dlopen("/Library/MobileSubstrate/DynamicLibraries/SlalomEnabler/SlalomShared.dylib", RTLD_LAZY);
     }
     return self;
 }
@@ -137,7 +141,7 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
 }
 
 - (NSUInteger)maxCompatibleFPS {
-    NSUInteger fps = maximumFPS();
+    NSUInteger fps = [SoftSlalomUtilities maximumFPS];
     return fps == 0 ? 30 : fps;
 }
 
@@ -162,10 +166,8 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (alertView.tag == 112299) {
-        if (buttonIndex == 1)
-            [self autoSetFPS];
-    }
+    if (alertView.tag == 112299 && buttonIndex == 1)
+        [self autoSetFPS];
 }
 
 - (void)setFPSValue:(id)value specifier:(PSSpecifier *)spec {
@@ -174,9 +176,7 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
 }
 
 - (void)setFakeFPSValue:(id)value specifier:(PSSpecifier *)spec {
-    NSUInteger fps = [value intValue];
-    if (fps <= 1)
-        fps = 1;
+    NSUInteger fps = MAX(1, [value intValue]);
     [self setPreferenceValue:@(fps) specifier:spec];
     [self reloadSpecifier:spec animated:NO];
 }
@@ -188,8 +188,6 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
 - (NSArray *)specifiers {
     if (_specifiers == nil) {
         NSMutableArray *specs = [NSMutableArray arrayWithArray:[self loadSpecifiersFromPlistName:@"Sla" target:self]];
-        NSUInteger fps = intForKey(MogulFramerateKey, maximumFPS());
-        [self showFPSWarningIfNeeded:fps];
         for (PSSpecifier *spec in specs) {
             NSString *Id = [spec identifier];
             if ([Id isEqualToString:@"fps"])

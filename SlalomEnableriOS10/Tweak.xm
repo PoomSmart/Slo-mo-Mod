@@ -1,7 +1,8 @@
-#import "../Slalom.h"
-#import "../Slalom.x"
+#define SE_SUPPRESSED
+#import "../SlalomUtilities.h"
 #import "../Dy.h"
 #import "../Dy.x"
+#import <UIKit/UIImage+Private.h>
 #import <sys/utsname.h>
 
 AVCaptureFigVideoDevice *dev;
@@ -19,38 +20,7 @@ AVCaptureFigVideoDevice *dev;
 %hook AVCaptureDevice
 
 - (AVCaptureDeviceFormat *)cameraVideoFormatForVideoConfiguration: (NSInteger)config {
-    if (config == 1 || config == 2) {
-        NSUInteger formatIndex = 0;
-        AVFrameRateRange *bestFrameRateRange = nil;
-        NSArray *formats = self.formats;
-        for (NSInteger i = 0; i < formats.count; i++) {
-            AVCaptureDeviceFormat *format = formats[i];
-            if ([format.mediaType isEqualToString:AVMediaTypeVideo]) {
-                for (AVFrameRateRange *range in format.videoSupportedFrameRateRanges) {
-                    if (range.maxFrameRate > bestFrameRateRange.maxFrameRate) {
-                        bestFrameRateRange = range;
-                        formatIndex = i;
-                    }
-                }
-            }
-        }
-        AVCaptureDeviceFormat *mogulFormat = formats[formatIndex];
-        AVFrameRateRange *range = mogulFormat.videoSupportedFrameRateRanges[0];
-        Float64 maxFrameRate = range.maxFrameRate;
-        if (maxFrameRate > 30)
-            return mogulFormat;
-        for (NSInteger i = 0; i < formats.count; i++) {
-            AVCaptureDeviceFormat *format = formats[i];
-            if ([format.mediaType isEqualToString:AVMediaTypeVideo]) {
-                CMVideoDimensions dimension = CMVideoFormatDescriptionGetDimensions(format.formatDescription);
-                if (dimension.width == 1280 && dimension.height == 720)
-                    formatIndex = [formats indexOfObject:format];
-            }
-        }
-        AVCaptureDeviceFormat *mogulFormat2 = formats[formatIndex];
-        return mogulFormat2;
-    }
-    return %orig;
+    return (config == 1 || config == 2) ? [SoftSlalomUtilities bestDeviceFormat2:self] : %orig;
 }
 
 %end
@@ -89,8 +59,8 @@ NSInteger _fps = -1;
 }
 
 %new
-- (void)autoSetFPS {
-    [self sm_setFPS:(NSUInteger)maximumFPS()];
+- (void)autoSetFPS: (UIGestureRecognizer *)sender {
+    [self sm_setFPS:(NSUInteger)[SoftSlalomUtilities maximumFPS]];
 }
 
 %new
@@ -106,18 +76,10 @@ NSInteger _fps = -1;
     return YES;
 }
 
-- (void)loadView {
-    if (!slalom_isCapableOfFPS(MogulFrameRate)) {
-        showNotCapableFPSAlert(self.view);
-        return;
-    }
-    %orig;
-}
-
 - (void)_commonCAMFramerateIndicatorViewInitializationWithLayoutStyle:(NSInteger)layoutStyle {
     %orig;
     if (indicatorTap) {
-        UITapGestureRecognizer *doubleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(autoSetFPS)];
+        UITapGestureRecognizer *doubleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(autoSetFPS:)];
         doubleGesture.numberOfTapsRequired = 2;
         UITapGestureRecognizer *singleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(setFPS:)];
         singleGesture.numberOfTapsRequired = 1;
@@ -197,8 +159,7 @@ NSInteger _fps = -1;
 %hook PLVideoView
 
 - (BOOL)_shouldShowSlalomEditor {
-    BOOL isMogul = [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul];
-    return ForceSlalom || isMogul ? YES : %orig;
+    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul]) ? YES : %orig;
 }
 
 %end
@@ -277,7 +238,7 @@ static void slalom_actionSheet2(PUVideoEditViewController *self, UIActionSheet *
 
 %new
 - (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
-    if (seHUD != nil) {
+    if (seHUD) {
         [seHUD hide];
         [seHUD release];
     }
@@ -286,7 +247,7 @@ static void slalom_actionSheet2(PUVideoEditViewController *self, UIActionSheet *
 - (void)videoRemakerDidEndRemaking:(id)arg1 temporaryPath:(NSString *)mediaPath {
     if (buttonAction) {
         buttonAction = NO;
-        if (mediaPath != nil)
+        if (mediaPath)
             UISaveVideoAtPathToSavedPhotosAlbum(mediaPath, self, @selector(se_video:didFinishSavingWithError:contextInfo:), nil);
     }
     %orig;
@@ -319,7 +280,7 @@ static void slalom_actionSheet2(PUVideoEditViewController *self, UIActionSheet *
 %hook PLManagedAsset
 
 - (BOOL)isMogul {
-    return [self isVideo] && ForceSlalom ? YES : %orig;
+    return ForceSlalom && [self isVideo] ? YES : %orig;
 }
 
 %end
@@ -338,7 +299,7 @@ extern "C" Boolean MGGetBoolAnswer(CFStringRef);
 %ctor {
     callback();
     if (EnableSlalom) {
-        HaveObserver()
+        HaveObserver();
         if ([NSBundle.mainBundle.bundleIdentifier isEqualToString:@"com.apple.mobileslideshow"]) {
             dlopen("/System/Library/Frameworks/PhotosUI.framework/PhotosUI", RTLD_LAZY);
             %init(Photos);

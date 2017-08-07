@@ -1,5 +1,5 @@
 #import "Slalom.h"
-#import "Slalom.x"
+#import "SlalomUtilities.h"
 #import "Dy.h"
 #import <objc/runtime.h>
 #import "../PSPrefs.x"
@@ -9,7 +9,7 @@ typedef void (^PSCompletionBlock)();
 #endif
 
 static void showHUDWithBlock(id self, NSString *text, NSString *text2, double delay, PSCompletionBlock block) {
-    SlalomMBProgressHUD *hud = [SlalomMBProgressHUD showHUDAddedTo:self animated:YES];
+    SlalomMBProgressHUD *hud = [SoftSlalomMBProgressHUD showHUDAddedTo:self animated:YES];
     hud.margin = 15.0f;
     hud.color = [UIColor whiteColor];
     hud.labelColor = [UIColor blackColor];
@@ -20,7 +20,7 @@ static void showHUDWithBlock(id self, NSString *text, NSString *text2, double de
     hud.removeFromSuperViewOnHide = YES;
     dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delay*NSEC_PER_SEC);
     dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-        [SlalomMBProgressHUD hideAllHUDsForView:self animated:YES];
+        [SoftSlalomMBProgressHUD hideAllHUDsForView:self animated:YES];
         if (block != NULL)
             block();
     });
@@ -31,9 +31,7 @@ static void showHUD(id self, NSString *text, NSString *text2, double delay) {
 }
 
 static BOOL slalom_isCapableOfFPS(double fps) {
-    if (fps <= 1)
-        return NO;
-    return fps <= maximumFPS();
+    return fps > 1 && fps <= [SoftSlalomUtilities maximumFPS];
 }
 
 static NSObject <cameraControllerDelegate> *cameraInstance() {
@@ -44,11 +42,6 @@ static NSObject <cameraControllerDelegate> *cameraInstance() {
 
 UIView <cameraViewDelegate> *cameraView(UIView *view) {
     return isiOS9Up ? (UIView <cameraViewDelegate> *)(view.superview.superview) : [cameraInstance() delegate];
-}
-
-static void showNotCapableFPSAlert(id self) {
-    showHUD(self, TWEAK_NAME, [NSString stringWithFormat:@"❗ Unsupported FPS: %ld\nHead to settings to change this.", (long)MogulFrameRate], 10);
-    didShowNotCapableAlert = YES;
 }
 
 static void __se_saveSlomo(UIViewController <photoBrowserDelegate> *self, PLVideoView *view, PLManagedAsset *asset, BOOL PU) {
@@ -76,6 +69,8 @@ static void __se_saveSlomo(UIViewController <photoBrowserDelegate> *self, PLVide
     [saver setRemakerMode:[saver _remakerModeForSelectedOption]];
     [saver _transcodeVideo:asset];
 }
+
+#ifndef SE_SUPPRESSED
 
 static void _se_saveSlomo(UIViewController <photoBrowserDelegate> *self) {
     __se_saveSlomo(self, self.currentVideoView, self.currentVideoView.videoCameraImage, NO);
@@ -105,9 +100,7 @@ static void _updateOverlaysAnimated(UIViewController <photoBrowserDelegate> *sel
     BOOL isVideo = [[self currentAsset] isVideo];
     if (isVideo) {
         PLVideoView *view = self.currentVideoView;
-        if (view == nil)
-            return;
-        if (![view _shouldShowSlalomEditor])
+        if (view == nil || ![view _shouldShowSlalomEditor])
             return;
         BOOL isCameraApp = [self isCameraApp];
         NSString *saveTitle = !isCameraApp ? SAVE_TEXT : @"...";
@@ -120,6 +113,8 @@ static void _updateOverlaysAnimated(UIViewController <photoBrowserDelegate> *sel
         [slomoBtn release];
     }
 }
+
+#endif
 
 static void _setFPS(UIView <slalomIndicatorViewDelegate> *self) {
     if (FakeFPS) {
@@ -141,9 +136,7 @@ static void _setFPS(UIView <slalomIndicatorViewDelegate> *self) {
 }
 
 static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger buttonIndex, UIView <slalomIndicatorViewDelegate> *self) {
-    if (buttonIndex == 0)
-        return;
-    if (alertView.tag != 5566)
+    if (buttonIndex == 0 || alertView.tag != 5566)
         return;
     NSUInteger fps = 60;
     switch (buttonIndex) {
@@ -160,7 +153,7 @@ static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger bu
             break;
         }
         case 2:
-            fps = (NSUInteger)maximumFPS();
+            fps = (NSUInteger)[SoftSlalomUtilities maximumFPS];
             break;
     }
     if (!slalom_isCapableOfFPS(fps)) {

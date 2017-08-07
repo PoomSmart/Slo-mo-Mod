@@ -1,12 +1,11 @@
 #import "../Slalom.h"
-#import "../Slalom.x"
+#import "../SlalomUtilities.h"
 #import "../Dy.h"
 #import "../Dy.x"
 
 %hook PLCameraView
 
-- (BOOL)canBecomeFirstResponder
-{
+- (BOOL)canBecomeFirstResponder {
     return YES;
 }
 
@@ -30,23 +29,9 @@
 
 %end
 
-%hook PLApplicationCameraViewController
-
-- (void)_kickoffCameraControllerPreview
-{
-    if (!slalom_isCapableOfFPS(MogulFrameRate)) {
-        showNotCapableFPSAlert([self view]);
-        return;
-    }
-    %orig;
-}
-
-%end
-
 %hook PLCameraController
 
-- (double)mogulFrameRate
-{
+- (double)mogulFrameRate {
     return (double)MogulFrameRate;
 }
 
@@ -57,34 +42,15 @@
 }
 
 - (AVCaptureDeviceFormat *)_mogulFormatFromDevice:(AVCaptureFigVideoDevice *)device {
-    NSUInteger formatIndex = 0;
-    AVFrameRateRange *bestFrameRateRange = nil;
-    NSArray *formats = device.formats;
-    for (NSUInteger i = 0; i < formats.count; i++) {
-        AVCaptureDeviceFormat *format = formats[i];
-        if ([format.mediaType isEqualToString:AVMediaTypeVideo]) {
-            for (AVFrameRateRange *range in format.videoSupportedFrameRateRanges) {
-                if (range.maxFrameRate > bestFrameRateRange.maxFrameRate) {
-                    bestFrameRateRange = range;
-                    formatIndex = i;
-                }
-            }
-        }
-    }
-    AVCaptureDeviceFormat *mogulFormat = formats[formatIndex];
-    AVFrameRateRange *range = mogulFormat.videoSupportedFrameRateRanges[0];
-    Float64 maxFrameRate = range.maxFrameRate;
-    if (maxFrameRate <= 30)
-        return %orig;
-    return mogulFormat;
+    AVCaptureDeviceFormat *format = [SoftSlalomUtilities bestDeviceFormat2:device further:NO];
+    return format ? format : %orig;
 }
 
 %end
 
 %hook PLSlalomConfiguration
 
-- (void)setRate: (float)r
-{
+- (void)setRate: (float)r {
     %orig(rate);
 }
 
@@ -100,12 +66,9 @@
 
 %hook PLSlalomUtilities
 
-+ (NSString *)exportPresetForAsset: (id)asset preferredPreset: (NSString *)preset
-{
-    if ([preset hasPrefix:@"AVAssetExportPresetMail"]) {
-        if (mailMax == 1)
-            return %orig(asset, @"AVAssetExportPresetHighestQuality");
-    }
++ (NSString *)exportPresetForAsset: (id)asset preferredPreset: (NSString *)preset {
+    if ([preset hasPrefix:@"AVAssetExportPresetMail"] && mailMax == 1)
+        return %orig(asset, @"AVAssetExportPresetHighestQuality");
     return %orig(asset, AVAssetExportPresetPassthrough);
 }
 
@@ -118,8 +81,7 @@
 
 %hook NSUserDefaults
 
-- (BOOL)boolForKey: (NSString *)name
-{
+- (BOOL)boolForKey: (NSString *)name {
     return [name isEqualToString:@"PLDebugCowbell"] ? YES : %orig;
 }
 
@@ -127,20 +89,17 @@
 
 %hook CAMSlalomIndicatorView
 
-- (void)setFramesPerSecond: (NSInteger)fps
-{
+- (void)setFramesPerSecond: (NSInteger)fps {
     %orig(FakeFPS ? aFPS : fps);
 }
 
 %new
-- (void)alertView: (UIAlertView *)alertView clickedButtonAtIndex: (NSInteger)buttonIndex
-{
+- (void)alertView: (UIAlertView *)alertView clickedButtonAtIndex: (NSInteger)buttonIndex {
     _alertView_clickedButtonAtIndex(alertView, buttonIndex, self);
 }
 
 %new
-- (void)sm_setFPS: (NSUInteger)fps
-{
+- (void)sm_setFPS: (NSUInteger)fps {
     [self setFramesPerSecond:fps];
     AVCaptureDevice *device = [cameraInstance() currentDevice];
     [device lockForConfiguration:nil];
@@ -150,21 +109,19 @@
 }
 
 %new
-- (void)autoSetFPS
-{
-    [self sm_setFPS:(NSUInteger)maximumFPS()];
+- (void)autoSetFPS: (UIGestureRecognizer *)sender {
+    [self sm_setFPS:(NSUInteger)[SoftSlalomUtilities maximumFPS]];
 }
 
 %new
-- (void)setFPS: (UIGestureRecognizer *)sender
-{
+- (void)setFPS: (UIGestureRecognizer *)sender {
     _setFPS(self);
 }
 
 - (id)initWithFrame:(CGRect)frame {
     self = %orig;
-    if (self && indicatorTap) {
-        UITapGestureRecognizer *doubleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(autoSetFPS)];
+    if (indicatorTap) {
+        UITapGestureRecognizer *doubleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(autoSetFPS:)];
         doubleGesture.numberOfTapsRequired = 2;
         UITapGestureRecognizer *singleGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(setFPS:)];
         singleGesture.numberOfTapsRequired = 1;
@@ -181,33 +138,26 @@
 
 %hook PLVideoView
 
-- (BOOL)_shouldShowSlalomEditor
-{
-    BOOL isMogul = [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul];
-    if (ForceSlalom || isMogul)
-        return YES;
-    return %orig;
+- (BOOL)_shouldShowSlalomEditor {
+    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul]) ? YES : %orig;
 }
 
 %end
 
 %hook PLPhotoBrowserController
 
-- (void)updateOverlaysAnimated: (BOOL)animated
-{
+- (void)updateOverlaysAnimated: (BOOL)animated {
     %orig;
     _updateOverlaysAnimated(self, animated);
 }
 
 %new
-- (void)se_saveSlomo
-{
+- (void)se_saveSlomo {
     _se_saveSlomo(self);
 }
 
 %new
-- (void)se_multipleOptions
-{
+- (void)se_multipleOptions {
     _se_multipleOptions(self);
 }
 
@@ -216,9 +166,8 @@
 %hook PLPublishingAgent
 
 %new
-- (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo
-{
-    if (seHUD != nil) {
+- (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
+    if (seHUD) {
         [seHUD hide];
         [seHUD release];
     }
@@ -227,7 +176,7 @@
 - (void)videoRemakerDidEndRemaking:(id)arg1 temporaryPath:(NSString *)mediaPath {
     if (buttonAction) {
         buttonAction = NO;
-        if (mediaPath != nil)
+        if (mediaPath)
             UISaveVideoAtPathToSavedPhotosAlbum(mediaPath, self, @selector(se_video:didFinishSavingWithError:contextInfo:), nil);
     }
     %orig;
@@ -238,8 +187,7 @@
 %hook CAMPadApplicationSpec
 
 %new
-- (BOOL)shouldCreateSlalomIndicator
-{
+- (BOOL)shouldCreateSlalomIndicator {
     return YES;
 }
 
@@ -247,20 +195,18 @@
 
 %hook CAMBottomBar
 
-- (void)_layoutForVerticalOrientation
-{
+- (void)_layoutForVerticalOrientation {
     %orig;
     CGRect frame = self.frame;
-    CGFloat midX = frame.size.width/2 - 20.0f;
-    self.slalomIndicatorView.frame = CGRectMake(midX, 20.0f, 40.0f, 40.0f);
+    CGFloat midX = frame.size.width / 2 - 20.0;
+    self.slalomIndicatorView.frame = CGRectMake(midX, 20.0, 40.0, 40.0);
 }
 
 %end
 
 %hook CAMCameraSpec
 
-- (BOOL)shouldCreateSlalomIndicator
-{
+- (BOOL)shouldCreateSlalomIndicator {
     return YES;
 }
 
@@ -272,8 +218,7 @@
 
 %hook PLPhotoBrowserController
 
-- (void)actionSheet: (UIActionSheet *)popup clickedButtonAtIndex: (NSInteger)buttonIndex
-{
+- (void)actionSheet: (UIActionSheet *)popup clickedButtonAtIndex: (NSInteger)buttonIndex {
     if (popup.tag == 95969596)
         slalom_actionSheet(self, popup, buttonIndex);
     else
@@ -282,20 +227,17 @@
 
 %end
 
-#define k(key) CFEqual(string, CFSTR(key))
 extern "C" Boolean MGGetBoolAnswer(CFStringRef);
-MSHook(Boolean, MGGetBoolAnswer, CFStringRef string){
+%hookf(Boolean, MGGetBoolAnswer, CFStringRef key) {
     if (k("RearFacingCameraHFRCapability"))
         return YES;
-    return _MGGetBoolAnswer(string);
+    return %orig(key);
 }
 
-%ctor
-{
-    HaveObserver()
+%ctor {
     callback();
     if (EnableSlalom) {
-        MSHookFunction(MGGetBoolAnswer, MSHake(MGGetBoolAnswer));
+        HaveObserver();
         %init;
     }
 }

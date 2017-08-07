@@ -1,0 +1,10 @@
+Architecture: iphoneos-arm
+Name: Slo-mo Mod (Debug)
+Package: org.thebigboss.slalommod
+Version: 1.0.0
+Author: PoomSmart
+Maintainer: PoomSmart
+Section: Tweaks
+Depends: mobilesubstrate, preferenceloader, firmware (>= 7.0), gsc.rear-camera-capability, ws.hbang.common (>= 1.2), org.thebigboss.burstmode | cy+model.iphone (>> 6)
+Description: Slo-mo feature for all devices.
+Icon: file:///Library/PreferenceBundles/SlalomModSettings.bundle/Sla@2x.png

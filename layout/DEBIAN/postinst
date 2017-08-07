@@ -12,5 +12,3 @@ fi
 
 ## No need anymore
 rm -rf /Library/SlalomUI
-
-echo "Make sure you reboot your device after installation!"

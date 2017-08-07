@@ -2,13 +2,13 @@
 #import "SlalomMBProgressHUD.h"
 
 @interface CAMSlalomIndicatorView (Addition)
-- (void)autoSetFPS;
+- (void)autoSetFPS:(UIGestureRecognizer *)sender;
 - (void)sm_setFPS:(NSUInteger)fps;
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSUInteger)index;
 @end
 
 @interface CAMFramerateIndicatorView (Addition)
-- (void)autoSetFPS;
+- (void)autoSetFPS:(UIGestureRecognizer *)sender;
 - (void)sm_setFPS:(NSUInteger)fps;
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSUInteger)index;
 - (void)setFramesPerSecond:(NSInteger)fps;
