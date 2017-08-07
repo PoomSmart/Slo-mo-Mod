@@ -52,10 +52,10 @@
 + (NSInteger)maximumFPS {
     Float64 limitFPS = 30;
     AVCaptureDevice *device = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
-    NSArray *formats = device.formats;
-    AVFrameRateRange *bestRange = formats[[self bestFrameRateRangeIndex:device]];
-    if (bestRange)
-        limitFPS = bestRange.maxFrameRate;
+    NSArray <AVCaptureDeviceFormat *> *formats = device.formats;
+    NSArray <AVFrameRateRange *> *ranges = formats[[self bestFrameRateRangeIndex:device]].videoSupportedFrameRateRanges;
+    for (AVFrameRateRange *range in ranges)
+        limitFPS = MAX(range.maxFrameRate, limitFPS);
     return (NSInteger)limitFPS;
 }
 
