@@ -4,121 +4,17 @@
 #import <objc/runtime.h>
 #import "../PSPrefs.x"
 
-#if NS_BLOCKS_AVAILABLE
-typedef void (^PSCompletionBlock)();
-#endif
-
-static void showHUDWithBlock(id self, NSString *text, NSString *text2, double delay, PSCompletionBlock block) {
-    SlalomMBProgressHUD *hud = [SoftSlalomMBProgressHUD showHUDAddedTo:self animated:YES];
-    hud.margin = 15.0f;
-    hud.color = [UIColor whiteColor];
-    hud.labelColor = [UIColor blackColor];
-    hud.detailsLabelColor = [UIColor blackColor];
-    hud.mode = MBProgressHUDModeText;
-    hud.labelText = text;
-    hud.detailsLabelText = text2;
-    hud.removeFromSuperViewOnHide = YES;
-    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delay*NSEC_PER_SEC);
-    dispatch_after(popTime, dispatch_get_main_queue(), ^(void){
-        [SoftSlalomMBProgressHUD hideAllHUDsForView:self animated:YES];
-        if (block != NULL)
-            block();
-    });
+static NSObject *cameraInstance() {
+    return objc_getClass("CAMCaptureController") ? [objc_getClass("CAMCaptureController") sharedInstance] : [objc_getClass("PLCameraController") sharedInstance];
 }
 
-static void showHUD(id self, NSString *text, NSString *text2, double delay) {
-    showHUDWithBlock(self, text, text2, delay, NULL);
+static UIView *cameraView(UIView *view) {
+    return isiOS9Up ? view.superview.superview : [cameraInstance() performSelector:@selector(delegate)];
 }
 
-static BOOL slalom_isCapableOfFPS(double fps) {
-    return fps > 1 && fps <= [SoftSlalomUtilities maximumFPS];
-}
-
-static NSObject <cameraControllerDelegate> *cameraInstance() {
-    if (objc_getClass("CAMCaptureController"))
-        return (CAMCaptureController *)[objc_getClass("CAMCaptureController") sharedInstance];
-    return (PLCameraController *)[objc_getClass("PLCameraController") sharedInstance];
-}
-
-UIView <cameraViewDelegate> *cameraView(UIView *view) {
-    return isiOS9Up ? (UIView <cameraViewDelegate> *)(view.superview.superview) : [cameraInstance() delegate];
-}
-
-static void __se_saveSlomo(UIViewController <photoBrowserDelegate> *self, PLVideoView *view, PLManagedAsset *asset, BOOL PU) {
-    BOOL cannotSave = NO;
-    if (view == nil)
-        cannotSave = !PU;
-    else {
-        id asset;
-        object_getInstanceVariable(view, "_videoCameraImage", (void * *)&asset);
-        if (![view canEdit] || ![view _canAccessVideo] || ![view _mediaIsPlayable] || ![view _mediaIsVideo] || ![asset isMogul])
-            cannotSave = YES;
-    }
-    if (cannotSave) {
-        showHUD(self.view, TWEAK_NAME, @"❗ The video is not ready for saving.", 3);
-        return;
-    }
-    buttonAction = YES;
-    seHUD = [[PLProgressHUD alloc] init];
-    [seHUD setText:@"Saving Slo-mo..."];
-    [seHUD showInView:self.view];
-    PLPublishingAgent *saver = [PLPublishingAgent publishingAgentForBundleNamed:@"PublishToYouTube" toPublishMedia:asset];
-    [saver setEnableHDUpload:YES];
-    [saver setMediaIsHDVideo:YES];
-    [saver setSelectedOption:1];
-    [saver setRemakerMode:[saver _remakerModeForSelectedOption]];
-    [saver _transcodeVideo:asset];
-}
-
-#ifndef SE_SUPPRESSED
-
-static void _se_saveSlomo(UIViewController <photoBrowserDelegate> *self) {
-    __se_saveSlomo(self, self.currentVideoView, self.currentVideoView.videoCameraImage, NO);
-}
-
-static void _se_multipleOptions(UIViewController <UIActionSheetDelegate, photoBrowserDelegate> *self) {
-    UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:
-                            SAVE_TEXT,
-                            @"Done", nil];
-    sheet.tag = 95969596;
-    [sheet showInView:self.view];
-    [sheet release];
-}
-
-static void slalom_actionSheet(UIViewController <photoBrowserDelegate> *self, UIActionSheet *popup, NSInteger buttonIndex) {
-    switch (buttonIndex) {
-        case 0:
-            [(id) self se_saveSlomo];
-            break;
-        case 1:
-            [self dismissViewControllerAnimated:YES completion:NULL];
-            break;
-    }
-}
-
-static void _updateOverlaysAnimated(UIViewController <photoBrowserDelegate> *self, BOOL animated) {
-    BOOL isVideo = [[self currentAsset] isVideo];
-    if (isVideo) {
-        PLVideoView *view = self.currentVideoView;
-        if (view == nil || ![view _shouldShowSlalomEditor])
-            return;
-        BOOL isCameraApp = [self isCameraApp];
-        NSString *saveTitle = !isCameraApp ? SAVE_TEXT : @"...";
-        SEL saveAction = !isCameraApp ? @selector(se_saveSlomo) : @selector(se_multipleOptions);
-        UIBarButtonItem *slomoBtn = [[UIBarButtonItem alloc] initWithTitle:saveTitle style:UIBarButtonItemStylePlain target:self action:saveAction];
-        for (UINavigationItem *item in self.navigationBar.items) {
-            if (![self isEditingVideo])
-                [item setRightBarButtonItem:slomoBtn animated:animated];
-        }
-        [slomoBtn release];
-    }
-}
-
-#endif
-
-static void _setFPS(UIView <slalomIndicatorViewDelegate> *self) {
+static void _setFPS(UIView *self) {
     if (FakeFPS) {
-        showHUD(cameraView(self), TWEAK_NAME, @"❗ Fake Framerate option is enabled, disable it first if you want to change this.", 3);
+        [SoftSlalomMBProgressHUD showHUD:cameraView(self) text:@"❗ Fake Framerate option is enabled, disable it first if you want to change this." delay:3];
         return;
     }
     NSString *message = @"Enter new FPS";
@@ -135,7 +31,7 @@ static void _setFPS(UIView <slalomIndicatorViewDelegate> *self) {
     [fpsInput7 release];
 }
 
-static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger buttonIndex, UIView <slalomIndicatorViewDelegate> *self) {
+static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger buttonIndex, UIView *self) {
     if (buttonIndex == 0 || alertView.tag != 5566)
         return;
     NSUInteger fps = 60;
@@ -145,9 +41,9 @@ static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger bu
             UITextField *textField = [alertView textFieldAtIndex:0];
             fps = textField.text.intValue;
             if (fps <= 1) {
-                showHUDWithBlock(cameraView(self), TWEAK_NAME, @"❗ Invalid FPS.", 1.5, ^{
+                [SoftSlalomMBProgressHUD showHUDWithBlock:cameraView(self) text:@"❗ Invalid FPS." delay:1.5 block:^{
                     [alertView show];
-                });
+                }];
                 return;
             }
             break;
@@ -156,10 +52,10 @@ static void _alertView_clickedButtonAtIndex(UIAlertView *alertView, NSInteger bu
             fps = (NSUInteger)[SoftSlalomUtilities maximumFPS];
             break;
     }
-    if (!slalom_isCapableOfFPS(fps)) {
-        showHUDWithBlock(cameraView(self), TWEAK_NAME, @"❗ This FPS is not supported by the device.", 1.8, ^{
+    if (![SoftSlalomUtilities isSupportedFPS:fps]) {
+        [SoftSlalomMBProgressHUD showHUDWithBlock:cameraView(self) text:@"❗ This FPS is not supported by the device." delay:1.8 block:^{
             [alertView show];
-        });
+        }];
         return;
     }
     [(id) self sm_setFPS:fps];

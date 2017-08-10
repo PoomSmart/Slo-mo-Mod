@@ -1,5 +1,6 @@
-#define SE_SUPPRESSED
+#import "../Slalom.h"
 #import "../SlalomUtilities.h"
+#import "../SlalomHelper.h"
 #import "../Dy.h"
 #import "../Dy.x"
 #import <UIKit/UIImage+Private.h>
@@ -164,21 +165,11 @@ NSInteger _fps = -1;
 
 %end
 
-static void slalom_actionSheet2(PUVideoEditViewController *self, UIActionSheet *popup, NSInteger buttonIndex) {
-    switch (buttonIndex) {
-        case 0:
-            [self se_saveSlomo];
-        case 1:
-            [self _handleSaveButton:nil];
-            break;
-    }
-}
-
 %hook PUVideoEditViewController
 
 %new
 - (void)se_saveSlomo {
-    __se_saveSlomo(self, nil, self._videoAsset.pl_managedAsset, YES);
+    [SoftSlalomHelper saveSlomo:self.view videoView:nil asset:self._videoAsset.pl_managedAsset PU:YES];
 }
 
 %new
@@ -203,50 +194,21 @@ static void slalom_actionSheet2(PUVideoEditViewController *self, UIActionSheet *
 %new
 - (void)actionSheet: (UIActionSheet *)popup clickedButtonAtIndex: (NSInteger)buttonIndex {
     if (popup.tag == 95969596)
-        slalom_actionSheet2(self, popup, buttonIndex);
+        [SoftSlalomHelper slalomActionSheet2:self popup:popup buttonIndex:buttonIndex];
 }
 
 %end
-
-/*%hook PUPhotoBrowserController
-
-   - (void)updateOverlaysAnimated: (BOOL)animated {
-    %orig;
-    _updateOverlaysAnimated(self, animated);
-   }
-
-   %new
-   - (void)se_saveSlomo {
-    _se_saveSlomo(self);
-   }
-
-   %new
-   - (void)se_multipleOptions {
-    _se_multipleOptions(self);
-   }
-
-   - (void)actionSheet:(UIActionSheet *)popup clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (popup.tag == 95969596)
-        slalom_actionSheet(self, popup, buttonIndex);
-    else
-        %orig;
-   }
-
-   %end*/
 
 %hook PLPublishingAgent
 
 %new
 - (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
-    if (seHUD) {
-        [seHUD hide];
-        [seHUD release];
-    }
+    [SoftSlalomHelper clearHUD];
 }
 
 - (void)videoRemakerDidEndRemaking:(id)arg1 temporaryPath:(NSString *)mediaPath {
-    if (buttonAction) {
-        buttonAction = NO;
+    if ([SoftSlalomHelper buttonAction]) {
+        [SoftSlalomHelper setButtonAction:NO];
         if (mediaPath)
             UISaveVideoAtPathToSavedPhotosAlbum(mediaPath, self, @selector(se_video:didFinishSavingWithError:contextInfo:), nil);
     }

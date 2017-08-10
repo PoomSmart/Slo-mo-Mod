@@ -59,4 +59,8 @@
     return (NSInteger)limitFPS;
 }
 
++ (BOOL)isSupportedFPS:(double)fps {
+    return fps > 1 && fps <= [self maximumFPS];
+}
+
 @end

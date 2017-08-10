@@ -1,5 +1,5 @@
 TARGET = iphone:clang:latest:7.0
-PACKAGE_VERSION = 1.5.4
+PACKAGE_VERSION = 1.5.5
 
 include $(THEOS)/makefiles/common.mk
 
@@ -14,7 +14,8 @@ SlalomEnabler_FILES = Tweak.xm
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 LIBRARY_NAME = SlalomShared
-SlalomShared_FILES = SlalomMBProgressHUD.m SlalomUtilities.m
+SlalomShared_FILES = SlalomMBProgressHUD.m SlalomUtilities.m SlalomHelper.m
+SlalomShared_PRIVATE_FRAMEWORKS = PhotoLibrary
 SlalomShared_INSTALL_PATH = /Library/MobileSubstrate/DynamicLibraries/SlalomEnabler
 
 include $(THEOS_MAKE_PATH)/library.mk

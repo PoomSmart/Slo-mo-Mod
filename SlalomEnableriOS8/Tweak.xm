@@ -1,5 +1,6 @@
 #import "../Slalom.h"
 #import "../SlalomUtilities.h"
+#import "../SlalomHelper.h"
 #import "../Dy.h"
 #import "../Dy.x"
 #import <UIKit/UIImage+Private.h>
@@ -68,17 +69,11 @@ BOOL noHigh = NO;
 
 %hook CAMCaptureController
 
-- (void)_startPreview: (id)arg1 {
-    if (didShowNotCapableAlert)
-        return;
-    %orig;
-}
-
 - (double)mogulFrameRate {
     return (double)MogulFrameRate;
 }
 
-- (void)_configureSessionWithCameraMode:(int)mode cameraDevice:(int)device options:(id)options {
+- (void)_configureSessionWithCameraMode:(NSInteger)mode cameraDevice:(NSInteger)device options:(id)options {
     noHigh = YES;
     %orig;
     noHigh = NO;
@@ -108,21 +103,17 @@ BOOL noHigh = NO;
 
 - (id)initWithVideoAsset: (AVAsset *)videoAsset videoAdjustments: (PFVideoAdjustments *)videoAdjustments {
     self = %orig;
-    if (self) {
-        if (ForceSlalom) {
-            if (videoAsset != nil) {
-                CMTime duration = videoAsset.duration;
-                CMTimeRange range = [%c(PFVideoAdjustments) defaultSlowMotionTimeRangeForDuration: duration];
-                if (videoAdjustments == nil) {
-                    float nominalFrameRate = [(AVAssetTrack *)[[videoAsset tracksWithMediaType:AVMediaTypeVideo] firstObject] nominalFrameRate];
-                    float rate = [%c(PFVideoAdjustments) defaultSlowMotionRateForNominalFrameRate: nominalFrameRate];
-                    PFVideoAdjustments *newVideoAdjustments = [[%c(PFVideoAdjustments) alloc] initWithSlowMotionTimeRange:range rate:rate];
-                    MSHookIvar<PFVideoAdjustments *>(self, "_videoAdjustments") = [newVideoAdjustments copy];
-                    [newVideoAdjustments release];
-                }
-                MSHookIvar<PFVideoAdjustments *>(self, "_videoAdjustments").slowMotionTimeRange = range;
-            }
+    if (self && ForceSlalom && videoAsset) {
+        CMTime duration = videoAsset.duration;
+        CMTimeRange range = [%c(PFVideoAdjustments) defaultSlowMotionTimeRangeForDuration: duration];
+        if (videoAdjustments == nil) {
+            float nominalFrameRate = [(AVAssetTrack *)[[videoAsset tracksWithMediaType:AVMediaTypeVideo] firstObject] nominalFrameRate];
+            float rate = [%c(PFVideoAdjustments) defaultSlowMotionRateForNominalFrameRate: nominalFrameRate];
+            PFVideoAdjustments *newVideoAdjustments = [[%c(PFVideoAdjustments) alloc] initWithSlowMotionTimeRange:range rate:rate];
+            MSHookIvar<PFVideoAdjustments *>(self, "_videoAdjustments") = [newVideoAdjustments copy];
+            [newVideoAdjustments release];
         }
+        MSHookIvar<PFVideoAdjustments *>(self, "_videoAdjustments").slowMotionTimeRange = range;
     }
     return self;
 }
@@ -233,7 +224,7 @@ BOOL noHigh = NO;
 %new
 - (void)sm_setFPS: (NSUInteger)fps {
     [self setFramesPerSecond:fps];
-    AVCaptureDevice *device = [cameraInstance() currentDevice];
+    AVCaptureDevice *device = [(CAMCaptureController *) cameraInstance ()currentDevice];
     [device lockForConfiguration:nil];
     [device setActiveVideoMinFrameDuration:CMTimeMake(1, fps)];
     [device setActiveVideoMaxFrameDuration:CMTimeMake(1, fps)];
@@ -280,22 +271,22 @@ BOOL noHigh = NO;
 
 - (void)updateOverlaysAnimated: (BOOL)animated {
     %orig;
-    _updateOverlaysAnimated(self, animated);
+    [SoftSlalomHelper updateOverlays:self.currentVideoView isVideo:[[self currentAsset] isVideo] isEditingVideo:[self isEditingVideo] isCameraApp:[self isCameraApp] navigationItems:self.navigationBar.items animated:animated target:self];
 }
 
 %new
 - (void)se_saveSlomo {
-    _se_saveSlomo(self);
+    [SoftSlalomHelper saveSlomo:self.view videoView:self.currentVideoView asset:self.currentVideoView.videoCameraImage PU:NO];
 }
 
 %new
 - (void)se_multipleOptions {
-    _se_multipleOptions(self);
+    [SoftSlalomHelper slalomMultipleOptions:self.view target:self];
 }
 
 - (void)actionSheet:(UIActionSheet *)popup clickedButtonAtIndex:(NSInteger)buttonIndex {
     if (popup.tag == 95969596)
-        slalom_actionSheet(self, popup, buttonIndex);
+        [SoftSlalomHelper slalomActionSheet:self popup:popup buttonIndex:buttonIndex];
     else
         %orig;
 }
@@ -306,15 +297,12 @@ BOOL noHigh = NO;
 
 %new
 - (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
-    if (seHUD) {
-        [seHUD hide];
-        [seHUD release];
-    }
+    [SoftSlalomHelper clearHUD];
 }
 
 - (void)videoRemakerDidEndRemaking:(id)arg1 temporaryPath:(NSString *)mediaPath {
-    if (buttonAction) {
-        buttonAction = NO;
+    if ([SoftSlalomHelper buttonAction]) {
+        [SoftSlalomHelper setButtonAction:NO];
         if (mediaPath)
             UISaveVideoAtPathToSavedPhotosAlbum(mediaPath, self, @selector(se_video:didFinishSavingWithError:contextInfo:), nil);
     }

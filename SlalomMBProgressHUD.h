@@ -30,6 +30,7 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import <CoreGraphics/CoreGraphics.h>
+#import "Slalom.h"
 
 @protocol MBProgressHUDDelegate;
 
@@ -439,6 +440,9 @@ typedef void (^MBProgressHUDCompletionBlock)();
  * Force the HUD dimensions to be equal if possible.
  */
 @property (assign, getter = isSquare) BOOL square;
+
++ (void)showHUDWithBlock:(id)self text:(NSString *)text delay:(double)delay block:(MBProgressHUDCompletionBlock)block;
++ (void)showHUD:(id)self text:(NSString *)text delay:(double)delay;
 
 @end
 

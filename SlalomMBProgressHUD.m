@@ -763,4 +763,26 @@ static const CGFloat kDetailsLabelFontSize = 12.f;
         [self setTransform:rotationTransform];
 }
 
++ (void)showHUDWithBlock:(id)target text:(NSString *)text delay:(double)delay block:(MBProgressHUDCompletionBlock)block {
+    SlalomMBProgressHUD *hud = [SlalomMBProgressHUD showHUDAddedTo:target animated:YES];
+    hud.margin = 15.0;
+    hud.color = [UIColor whiteColor];
+    hud.labelColor = [UIColor blackColor];
+    hud.detailsLabelColor = [UIColor blackColor];
+    hud.mode = MBProgressHUDModeText;
+    hud.labelText = TWEAK_NAME;
+    hud.detailsLabelText = text;
+    hud.removeFromSuperViewOnHide = YES;
+    dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, delay * NSEC_PER_SEC);
+    dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
+        [SlalomMBProgressHUD hideAllHUDsForView:target animated:YES];
+        if (block)
+            block();
+    });
+}
+
++ (void)showHUD:(id)target text:(NSString *)text delay:(double)delay {
+    [self showHUDWithBlock:target text:text delay:delay block:NULL];
+}
+
 @end
