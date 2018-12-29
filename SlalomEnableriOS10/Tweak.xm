@@ -20,7 +20,7 @@ AVCaptureFigVideoDevice *dev;
 
 %hook AVCaptureDevice
 
-- (AVCaptureDeviceFormat *)cameraVideoFormatForVideoConfiguration: (NSInteger)config {
+- (AVCaptureDeviceFormat *)cameraVideoFormatForVideoConfiguration:(NSInteger)config {
     return (config == 1 || config == 2) ? [SoftSlalomUtilities bestDeviceFormat2:self] : %orig;
 }
 
@@ -37,19 +37,19 @@ NSInteger _fps = -1;
 }
 
 %new
-- (void)setFramesPerSecond: (NSInteger)fps {
+- (void)setFramesPerSecond:(NSInteger)fps {
     MSHookIvar<UILabel *>(self, "__label").text = [NSString stringWithFormat:@"%ld", (long)fps];
     _fps = fps;
     [self _updateLabels];
 }
 
 %new
-- (void)alertView: (UIAlertView *)alertView clickedButtonAtIndex: (NSInteger)buttonIndex {
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     _alertView_clickedButtonAtIndex(alertView, buttonIndex, self);
 }
 
 %new
-- (void)sm_setFPS: (NSUInteger)fps {
+- (void)sm_setFPS:(NSUInteger)fps {
     [self setFramesPerSecond:fps];
     if (dev) {
         [dev lockForConfiguration:nil];
@@ -60,12 +60,12 @@ NSInteger _fps = -1;
 }
 
 %new
-- (void)autoSetFPS: (UIGestureRecognizer *)sender {
+- (void)autoSetFPS:(UIGestureRecognizer *)sender {
     [self sm_setFPS:(NSUInteger)[SoftSlalomUtilities maximumFPS]];
 }
 
 %new
-- (void)setFPS: (UIGestureRecognizer *)sender {
+- (void)setFPS:(UIGestureRecognizer *)sender {
     _setFPS(self);
 }
 
@@ -98,7 +98,7 @@ NSInteger _fps = -1;
 
 %hook PFSlowMotionUtilities
 
-+ (NSString *)exportPresetForAsset: (id)asset preferredPreset: (NSString *)preset {
++ (NSString *)exportPresetForAsset:(id)asset preferredPreset:(NSString *)preset {
     if ([preset hasPrefix:@"AVAssetExportPresetMail"]) {
         if (mailMax == 1)
             return %orig(asset, @"AVAssetExportPresetHighestQuality");
@@ -127,7 +127,7 @@ NSInteger _fps = -1;
 
 %hook PFVideoAdjustments
 
-+ (float)defaultSlowMotionRateForNominalFrameRate: (float)framerate {
++ (float)defaultSlowMotionRateForNominalFrameRate:(float)framerate {
     return rate;
 }
 
@@ -143,7 +143,7 @@ NSInteger _fps = -1;
 
 %hook PUVideoBannerView
 
-- (UIImage *)_badgeImageForVideoSubtype: (NSUInteger)subtype {
+- (UIImage *)_badgeImageForVideoSubtype:(NSUInteger)subtype {
     return ForceSlalom ? [UIImage pu_PhotosUIImageNamed:@"PUBadgeSlomo"] : %orig;
 }
 
@@ -151,7 +151,7 @@ NSInteger _fps = -1;
 
 %hook PUBadgeManager
 
-- (long long)_badgeTypeForPLAsset: (PLManagedAsset *)asset size: (long long)a2 {
+- (long long)_badgeTypeForPLAsset:(PLManagedAsset *)asset size:(long long)a2 {
     return ForceSlalom && [asset isVideo] ? 7 : %orig;
 }
 
@@ -160,7 +160,7 @@ NSInteger _fps = -1;
 %hook PLVideoView
 
 - (BOOL)_shouldShowSlalomEditor {
-    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul]) ? YES : %orig;
+    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage") isMogul]) ? YES : %orig;
 }
 
 %end
@@ -192,7 +192,7 @@ NSInteger _fps = -1;
 }
 
 %new
-- (void)actionSheet: (UIActionSheet *)popup clickedButtonAtIndex: (NSInteger)buttonIndex {
+- (void)actionSheet:(UIActionSheet *)popup clickedButtonAtIndex:(NSInteger)buttonIndex {
     if (popup.tag == 95969596)
         [SoftSlalomHelper slalomActionSheet2:self popup:popup buttonIndex:buttonIndex];
 }
@@ -202,7 +202,7 @@ NSInteger _fps = -1;
 %hook PLPublishingAgent
 
 %new
-- (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
+- (void)se_video:(NSString *)videoPath didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo {
     [SoftSlalomHelper clearHUD];
 }
 
@@ -223,7 +223,7 @@ NSInteger _fps = -1;
 
 %hook PLManagedAsset
 
-- (BOOL)setVideoInfoFromFileAtURL: (NSURL *)fileURL fullSizeRenderURL: (NSURL *)fullSizeURL overwriteOriginalProperties: (BOOL)overwrite {
+- (BOOL)setVideoInfoFromFileAtURL:(NSURL *)fileURL fullSizeRenderURL:(NSURL *)fullSizeURL overwriteOriginalProperties:(BOOL)overwrite {
     BOOL orig = %orig;
     NSURL *url = fullSizeURL ? fullSizeURL : fileURL;
     AVAsset *asset = [AVAsset assetWithURL:url];
@@ -251,7 +251,7 @@ NSInteger _fps = -1;
 
 extern "C" Boolean MGGetBoolAnswer(CFStringRef);
 %hookf(BOOL, MGGetBoolAnswer, CFStringRef key) {
-    if (k("RearFacingCameraHFRCapability"))
+    if (CFStringEqual(key, CFSTR("RearFacingCameraHFRCapability")))
         return YES;
     return %orig;
 }
@@ -266,24 +266,11 @@ extern "C" Boolean MGGetBoolAnswer(CFStringRef);
             dlopen("/System/Library/Frameworks/PhotosUI.framework/PhotosUI", RTLD_LAZY);
             %init(Photos);
         }
-        NSArray *args = [[NSClassFromString(@"NSProcessInfo") processInfo] arguments];
-        BOOL process = NO;
-        if (args.count) {
-            NSString *executablePath = args[0];
-            if (executablePath) {
-                NSString *processName = [executablePath lastPathComponent];
-                if ([processName isEqualToString:@"assetsd"]) {
-                    process = YES;
-                    %init(assetsd);
-                }
-            }
-        }
         %init(MG);
-        if (!process) {
-            struct utsname systemInfo;
-            uname(&systemInfo);
-            NSString *modelName = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
-            if ([modelName hasPrefix:@"iPhone5"] || [modelName hasPrefix:@"iPad3"] || [modelName isEqualToString:@"iPad4,4"] || [modelName isEqualToString:@"iPad4,5"] || [modelName isEqualToString:@"iPad4,6"]) {
+        if ([@"assetsd" isEqualToString:[NSProcessInfo processInfo].processName]) {
+            %init(assetsd);
+        } else {
+            if ([SoftSlalomUtilities isLegacyDevice]) {
                 %init(Legacy);
             }
             %init;

@@ -1,12 +1,20 @@
 #import "SlalomUtilities.h"
+#import <sys/utsname.h>
 
 @implementation SlalomUtilities
+
++ (BOOL)isLegacyDevice {
+    struct utsname systemInfo;
+    uname(&systemInfo);
+    NSString *modelName = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    return [modelName isEqualToString:@"iPod5,1"] || [modelName hasPrefix:@"iPhone4"] || [modelName hasPrefix:@"iPhone5"] || [modelName hasPrefix:@"iPad2"] || [modelName hasPrefix:@"iPad3"] || [modelName isEqualToString:@"iPad4,4"] || [modelName isEqualToString:@"iPad4,5"] || [modelName isEqualToString:@"iPad4,6"];
+}
 
 + (NSUInteger)bestFrameRateRangeIndex:(AVCaptureDevice *)device {
     NSUInteger formatIndex = 0;
     AVFrameRateRange *bestFrameRateRange = nil;
     NSArray *formats = device.formats;
-    for (NSUInteger i = 0; i < formats.count; i++) {
+    for (NSUInteger i = 0; i < formats.count; ++i) {
         AVCaptureDeviceFormat *format = formats[i];
         if ([format.mediaType isEqualToString:AVMediaTypeVideo]) {
             for (AVFrameRateRange *range in format.videoSupportedFrameRateRanges) {

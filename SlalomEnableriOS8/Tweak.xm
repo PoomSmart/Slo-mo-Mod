@@ -52,7 +52,7 @@
 
 %hook PFSlowMotionUtilities
 
-+ (NSString *)exportPresetForAsset: (id)asset preferredPreset: (NSString *)preset {
++ (NSString *)exportPresetForAsset:(id)asset preferredPreset:(NSString *)preset {
     if ([preset hasPrefix:@"AVAssetExportPresetMail"] && mailMax == 1)
         return %orig(asset, @"AVAssetExportPresetHighestQuality");
     return %orig(asset, AVAssetExportPresetPassthrough);
@@ -101,7 +101,7 @@ BOOL noHigh = NO;
 
 %hook PFVideoAVObjectBuilder
 
-- (id)initWithVideoAsset: (AVAsset *)videoAsset videoAdjustments: (PFVideoAdjustments *)videoAdjustments {
+- (id)initWithVideoAsset:(AVAsset *)videoAsset videoAdjustments:(PFVideoAdjustments *)videoAdjustments {
     self = %orig;
     if (self && ForceSlalom && videoAsset) {
         CMTime duration = videoAsset.duration;
@@ -122,7 +122,7 @@ BOOL noHigh = NO;
 
 %hook PFVideoAdjustments
 
-+ (float)defaultSlowMotionRateForNominalFrameRate: (float)framerate {
++ (float)defaultSlowMotionRateForNominalFrameRate:(float)framerate {
     return rate;
 }
 
@@ -138,7 +138,7 @@ BOOL noHigh = NO;
 
 %hook PUVideoBannerView
 
-- (UIImage *)_badgeImageForVideoSubtype: (NSUInteger)subtype {
+- (UIImage *)_badgeImageForVideoSubtype:(NSUInteger)subtype {
     return ForceSlalom ? [UIImage pu_PhotosUIImageNamed:@"PUSlalomBadgeIcon"] : %orig;
 }
 
@@ -148,7 +148,7 @@ BOOL noHigh = NO;
 
 %hook PLManagedAsset
 
-- (BOOL)setVideoInfoFromFileAtURL: (NSURL *)fileURL fullSizeRenderURL: (NSURL *)fullSizeURL overwriteOriginalProperties: (BOOL)overwrite {
+- (BOOL)setVideoInfoFromFileAtURL:(NSURL *)fileURL fullSizeRenderURL:(NSURL *)fullSizeURL overwriteOriginalProperties:(BOOL)overwrite {
     BOOL orig = %orig;
     NSURL *url = fullSizeURL ? fullSizeURL : fileURL;
     AVAsset *asset = [AVAsset assetWithURL:url];
@@ -212,17 +212,17 @@ BOOL noHigh = NO;
 
 %hook CAMSlalomIndicatorView
 
-- (void)setFramesPerSecond: (NSInteger)fps {
+- (void)setFramesPerSecond:(NSInteger)fps {
     %orig(FakeFPS ? aFPS : fps);
 }
 
 %new
-- (void)alertView: (UIAlertView *)alertView clickedButtonAtIndex: (NSInteger)buttonIndex {
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     _alertView_clickedButtonAtIndex(alertView, buttonIndex, self);
 }
 
 %new
-- (void)sm_setFPS: (NSUInteger)fps {
+- (void)sm_setFPS:(NSUInteger)fps {
     [self setFramesPerSecond:fps];
     AVCaptureDevice *device = [(CAMCaptureController *) cameraInstance ()currentDevice];
     [device lockForConfiguration:nil];
@@ -232,12 +232,12 @@ BOOL noHigh = NO;
 }
 
 %new
-- (void)autoSetFPS: (UIGestureRecognizer *)sender {
+- (void)autoSetFPS:(UIGestureRecognizer *)sender {
     [self sm_setFPS:(NSUInteger)[SoftSlalomUtilities maximumFPS]];
 }
 
 %new
-- (void)setFPS: (UIGestureRecognizer *)sender {
+- (void)setFPS:(UIGestureRecognizer *)sender {
     _setFPS(self);
 }
 
@@ -262,14 +262,14 @@ BOOL noHigh = NO;
 %hook PLVideoView
 
 - (BOOL)_shouldShowSlalomEditor {
-    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage")isMogul]) ? YES : %orig;
+    return (ForceSlalom || [MSHookIvar<PLManagedAsset *>(self, "_videoCameraImage") isMogul]) ? YES : %orig;
 }
 
 %end
 
 %hook PLPhotoBrowserController
 
-- (void)updateOverlaysAnimated: (BOOL)animated {
+- (void)updateOverlaysAnimated:(BOOL)animated {
     %orig;
     [SoftSlalomHelper updateOverlays:self.currentVideoView isVideo:[[self currentAsset] isVideo] isEditingVideo:[self isEditingVideo] isCameraApp:[self isCameraApp] navigationItems:self.navigationBar.items animated:animated target:self];
 }
@@ -296,7 +296,7 @@ BOOL noHigh = NO;
 %hook PLPublishingAgent
 
 %new
-- (void)se_video: (NSString *)videoPath didFinishSavingWithError: (NSError *)error contextInfo: (void *)contextInfo {
+- (void)se_video:(NSString *)videoPath didFinishSavingWithError:(NSError *)error contextInfo:(void *)contextInfo {
     [SoftSlalomHelper clearHUD];
 }
 
@@ -315,7 +315,7 @@ BOOL noHigh = NO;
 
 extern "C" Boolean MGGetBoolAnswer(CFStringRef);
 %hookf(Boolean, MGGetBoolAnswer, CFStringRef key) {
-    if (k("RearFacingCameraHFRCapability"))
+    if (CFStringEqual(key, CFSTR("RearFacingCameraHFRCapability")))
         return YES;
     return %orig(key);
 }
@@ -327,19 +327,9 @@ extern "C" Boolean MGGetBoolAnswer(CFStringRef);
     if (EnableSlalom) {
         HaveObserver();
         %init(MG);
-        NSArray *args = [[NSClassFromString(@"NSProcessInfo") processInfo] arguments];
-        BOOL process = NO;
-        if (args.count) {
-            NSString *executablePath = args[0];
-            if (executablePath) {
-                NSString *processName = [executablePath lastPathComponent];
-                if ([processName isEqualToString:@"assetsd"]) {
-                    process = YES;
-                    %init(assetsd);
-                }
-            }
-        }
-        if (!process) {
+        if ([@"assetsd" isEqualToString:[NSProcessInfo processInfo].processName]) {
+            %init(assetsd);
+        } else {
             %init;
         }
     }

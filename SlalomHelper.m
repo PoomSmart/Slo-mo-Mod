@@ -16,7 +16,7 @@
         cannotSave = !PU;
     else {
         id asset;
-        object_getInstanceVariable(view, "_videoCameraImage", (void * *)&asset);
+        object_getInstanceVariable(view, "_videoCameraImage", (void **)&asset);
         if (![view canEdit] || ![view _canAccessVideo] || ![view _mediaIsPlayable] || ![view _mediaIsVideo] || ![asset isMogul])
             cannotSave = YES;
     }
@@ -25,10 +25,10 @@
         return;
     }
     [self setButtonAction:YES];
-    seHUD = [[PLProgressHUD alloc] init];
+    seHUD = [[NSClassFromString(@"PLProgressHUD") alloc] init];
     [seHUD setText:@"Saving Slo-mo..."];
     [seHUD showInView:showView];
-    PLPublishingAgent *saver = [PLPublishingAgent publishingAgentForBundleNamed:@"PublishToYouTube" toPublishMedia:asset];
+    PLPublishingAgent *saver = [NSClassFromString(@"PLPublishingAgent") publishingAgentForBundleNamed:@"PublishToYouTube" toPublishMedia:asset];
     [saver setEnableHDUpload:YES];
     [saver setMediaIsHDVideo:YES];
     [saver setSelectedOption:1];
@@ -48,7 +48,7 @@
 + (void)slalomActionSheet:(UIViewController *)vc popup:(UIActionSheet *)popup buttonIndex:(NSInteger)buttonIndex {
     switch (buttonIndex) {
         case 0:
-            [(PLPhotoBrowserController *) vc se_saveSlomo];
+            [(PLPhotoBrowserController *)vc se_saveSlomo];
             break;
         case 1:
             [vc dismissViewControllerAnimated:YES completion:NULL];

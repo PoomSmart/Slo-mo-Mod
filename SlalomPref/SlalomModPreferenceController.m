@@ -2,18 +2,33 @@
 #define KILL_PROCESS
 #import <UIKit/UIImage+Private.h>
 #import <UIKit/UIColor+Private.h>
-#import <Cephei/HBListController.h>
+#import <CepheiPrefs/HBListController.h>
+#import <CepheiPrefs/HBAppearanceSettings.h>
 #import <Preferences/PSSpecifier.h>
 #import <Social/Social.h>
 #include <sys/sysctl.h>
-#import "Slalom.h"
-#import "SlalomUtilities.h"
-#import <Cephei/HBAppearanceSettings.h>
+#import "../Slalom.h"
+#import "../SlalomUtilities.h"
+#import "../../PSPrefs.x"
 #import <dlfcn.h>
-#import "../PSPrefs.x"
+#include <spawn.h>
 
 DeclarePrefs()
 DeclareGetter()
+
+extern char **environ;
+
+void _system(char *cmd) {
+    pid_t pid;
+    char *argv[] = {"sh", "-c", cmd, NULL};
+    int status;
+    status = posix_spawn(&pid, "/bin/sh", NULL, NULL, argv, environ);
+    if (status == 0) {
+        if (waitpid(pid, &status, 0) == -1) {
+            perror("waitpid");
+        }
+    }
+}
 
 @interface SlalomModGuideViewController : UIViewController
 @end
@@ -90,10 +105,10 @@ HavePrefs()
 
 - (void)reloadAS:(id)param {
     if (isiOS8Up)
-        system("launchctl kickstart -k system/com.apple.assetsd");
+        _system("launchctl kickstart -k system/com.apple.assetsd");
     else {
-        system("launchctl stop com.apple.assetsd");
-        system("launchctl start com.apple.assetsd");
+        _system("launchctl stop com.apple.assetsd");
+        _system("launchctl start com.apple.assetsd");
     }
 }
 
@@ -104,7 +119,8 @@ HaveBanner2(TWEAK_NAME, UIColor.systemRedColor, @"Slow motion for all devices", 
         HBAppearanceSettings *appearanceSettings = [[HBAppearanceSettings alloc] init];
         appearanceSettings.tintColor = UIColor.systemRedColor;
         appearanceSettings.tableViewCellTextColor = UIColor.systemRedColor;
-        appearanceSettings.invertedNavigationBar = YES;
+        appearanceSettings.navigationBarBackgroundColor = UIColor.systemRedColor;
+        appearanceSettings.navigationBarTitleColor = UIColor.whiteColor;
         self.hb_appearanceSettings = appearanceSettings;
         UIButton *heart = [[[UIButton alloc] initWithFrame:CGRectZero] autorelease];
         UIImage *image = [[UIImage imageNamed:@"Heart" inBundle:[NSBundle bundleWithPath:@"/Library/PreferenceBundles/SlalomModSettings.bundle"]] _flatImageWithColor:UIColor.whiteColor];

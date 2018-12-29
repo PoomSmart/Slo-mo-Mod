@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface SlalomUtilities : NSObject
++ (BOOL)isLegacyDevice;
 + (NSUInteger)bestFrameRateRangeIndex:(AVCaptureDevice *)device;
 + (AVCaptureDeviceFormat *)bestDeviceFormat:(AVCaptureDevice *)device;
 + (AVCaptureDeviceFormat *)bestDeviceFormat2:(AVCaptureDevice *)device further:(BOOL)further;
